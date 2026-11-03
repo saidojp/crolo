@@ -32,3 +32,23 @@ class DBUse(Base):
 
     roles = relationship("DBRole", secondary=user_roles, back_populates="users")
 
+class DBRole(Base):
+    __tablename__ = "roles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True)
+    description = Column(String)
+
+    users = relationship("DBUser", secondary=user_roles, back_populates="roles")
+
+# Create tables
+Base.metadata.create_all(bind=engine)
+
+def get_db():
+    """Dependency to get database session."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
