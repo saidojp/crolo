@@ -20,7 +20,7 @@ user_roles = Table(
 
 )
 
-class DBUse(Base):
+class DBUser(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
@@ -28,7 +28,7 @@ class DBUse(Base):
     full_name = Column(String)
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=func.now())
+    created_at = Column(DateTime, server_default=func.now())
 
     roles = relationship("DBRole", secondary=user_roles, back_populates="users")
 
