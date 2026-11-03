@@ -1,0 +1,34 @@
+from sqlalchemy import Boolean, create_engine, Column, Integer, String, DateTime, Table, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.sql import func
+
+#db url - sqlite for development
+DATABASE_URL = "sqlite:///./crolo.db"
+
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread":False})
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base = declarative_base()
+
+# association table for many-to-many relationship between users and roles
+user_roles = Table(
+    'user_roles',
+    Base.metadata,
+    Column('user_id', Integer, ForeignKey('users.id')),
+    Column('role_id', Integer, ForeignKey('roles.id'))
+
+)
+
+class DBUse(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True)
+    email = Column(String, unique=True, index=True)
+    full_name = Column(String)
+    hashed_password = Column(String)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=func.now())
+
+    roles = relationship("DBRole", secondary=user_roles, back_populates="users")
+
