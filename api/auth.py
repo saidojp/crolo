@@ -7,6 +7,9 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
+from sqlalchemy.orm import Session
+from api import crud
+from database import get_db, DBUser
 from models import User, UserInDB
 
 # Configuration
@@ -20,25 +23,15 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-# fake
-fake_users_db = {
-    "johndoe": {
-        "username": "johndoe",
-        "full_name": "John Doe",
-        "email": "johndoe@example.com",
-        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # secret
-        "disabled": False,
-    }
-}
-
-def verify_password(plain_password, hashed_password):
-    """Verify a password against its hash."""
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password):
-    """Generate a hash for a password."""
-    return pwd_context.hash(password)
-
+def convert_db_user_to_user(db_user: DBUser) -> User:
+    """Convert database user to Pydantic user model."""
+    return User(
+        username=db_user.username,
+        email=db_user.email,
+        full_name=db_user.full_name,
+        disabled=not db_user.is_active,
+        roles=[role.name for role in db_user.roles]
+    )
 
 security = HTTPBasic()
 
@@ -55,18 +48,9 @@ def authenticate_user(credentials: HTTPBasicCredentials=Depends(security)):
 
     return credentials.username
 
-def get_user(db, username:str):
-    if username in db:
-        user_dict = db[username]
-        return UserInDB(**user_dict)
 
-def authenticate_user(fake_db, username: str, password: str):
-    user = get_user(fake_db, username)
-    if not user:
-        return False
-    if not verify_password(password, user.hashed_password):
-        return False
-    return user
+
+
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
@@ -79,8 +63,10 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
+
+
 # get current user from jwt token
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -95,10 +81,13 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     except JWTError:
         raise credentials_exception
 
-    user = get_user(fake_users_db, username=username)
-    if user is None:
+    db_user = crud.get_user_by_username(db, username=username)
+    if db_user is None:
         raise credentials_exception
-    return user
+    return convert_db_user_to_user(db_user)
+
+
+
 
 async def get_current_active_user(current_user: User = Depends(get_current_user)):
     # Get the current active user (not disabled)
