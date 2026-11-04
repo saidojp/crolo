@@ -1,11 +1,12 @@
 from fastapi import FastAPI, Depends, HTTPException, status  # pyright: ignore[reportMissingImports]
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
+from typing import cast
 from sqlalchemy.orm import Session
-from api import crud
+import crud
 from database import get_db
 from auth import (
-   create_access_token, get_current_active_user, authenticate_user, ACCESS_TOKEN_EXPIRE_MINUTES
+   create_access_token, get_current_active_user, ACCESS_TOKEN_EXPIRE_MINUTES
 )
 from models import User, UserCreate
 
@@ -28,11 +29,11 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Email already registered")
     new_user = crud.create_user(db=db, user=user)
     return User(
-        username=new_user.username,
-        email=new_user.email,
-        full_name=new_user.full_name,
-        disabled=not new_user.is_active,
-        roles=[role.name for role in new_user.roles])
+        username=cast(str, new_user.username),
+        email=cast(str, new_user.email),
+        full_name=cast(str, new_user.full_name),
+        disabled=not cast(bool, new_user.is_active),
+        roles=[cast(str, role.name) for role in new_user.roles])
 
 
 @app.post("/token")

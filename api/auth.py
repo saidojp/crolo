@@ -1,56 +1,48 @@
-import secrets 
-from fastapi import Depends, FastAPI, HTTPException, status
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+import os
 from datetime import datetime, timedelta, timezone
-from typing import Optional
-from passlib.context import CryptContext
+from pathlib import Path
+from typing import Optional, cast
+
 from fastapi import Depends, HTTPException, status
+from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
+from dotenv import load_dotenv
 from sqlalchemy.orm import Session
-from api import crud
-from database import get_db, DBUser
-from models import User, UserInDB
 
-# Configuration
-SECRET_KEY = "your-secret-key-here"  # In production, use environment variables
+import crud
+from database import get_db, DBUser
+from models import User
+
+load_dotenv(dotenv_path=Path(__file__).with_name(".env"))
+
+
+def _get_secret_key() -> str:
+    secret_key = os.getenv("SECRET_KEY")
+    if not secret_key:
+        raise RuntimeError("SECRET_KEY environment variable is required")
+    return secret_key
+
+
+SECRET_KEY = _get_secret_key()
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
 
 def convert_db_user_to_user(db_user: DBUser) -> User:
     """Convert database user to Pydantic user model."""
     return User(
-        username=db_user.username,
-        email=db_user.email,
-        full_name=db_user.full_name,
-        disabled=not db_user.is_active,
-        roles=[role.name for role in db_user.roles]
+        username=cast(str, db_user.username),
+        email=cast(Optional[str], db_user.email),
+        full_name=cast(Optional[str], db_user.full_name),
+        disabled=not cast(bool, db_user.is_active),
+        roles=[cast(str, role.name) for role in db_user.roles]
     )
-
-security = HTTPBasic()
-
-def authenticate_user(credentials: HTTPBasicCredentials=Depends(security)):
-    correct_username = secrets.compare_digest(credentials.username, "admin")
-    correct_password = secrets.compare_digest(credentials.password, "secret")
-
-    if not (correct_username and correct_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-
-    return credentials.username
-
-
-
-
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
@@ -65,7 +57,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 
 
-# get current user from jwt token
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -75,8 +66,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
+        username = payload.get("sub")
+        if not isinstance(username, str):
             raise credentials_exception
     except JWTError:
         raise credentials_exception

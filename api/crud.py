@@ -2,9 +2,11 @@ from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from database import DBUser, DBRole
 from models import UserCreate
-from typing import Optional
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["bcrypt_sha256", "bcrypt"],
+    deprecated="auto",
+)
 
 def get_user_by_id(db: Session, user_id: int):
     """Get user by ID."""
@@ -58,3 +60,7 @@ def create_role(db: Session, name: str, description: str = ""):
 def get_all_users(db: Session, skip: int = 0, limit: int = 100):
     """Get all users with pagination."""
     return db.query(DBUser).offset(skip).limit(limit).all()
+
+def get_role_by_name(db: Session, name: str):
+    """Get role by name."""
+    return db.query(DBRole).filter(DBRole.name == name).first()

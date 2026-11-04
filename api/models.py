@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 class User(BaseModel):
@@ -6,9 +6,10 @@ class User(BaseModel):
     email: Optional[str] = None
     full_name: Optional[str] = None
     disabled: Optional[bool] = None
+    roles: list[str] = Field(default_factory=list)
 
 class UserInDB(User):
-    hashed_pswrd:str
+    hashed_password: str
 
 
 class UserCreate(BaseModel):
@@ -16,4 +17,3 @@ class UserCreate(BaseModel):
     email: str
     full_name: str
     password: str
-
