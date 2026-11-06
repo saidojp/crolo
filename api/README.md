@@ -74,6 +74,7 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 | Method | Path         | Auth   | Description                          |
 | ------ | ------------ | ------ | ------------------------------------ |
 | `GET`  | `/`          | No     | Health/welcome message               |
+| `GET`  | `/health`    | No     | Liveness probe (`{"status":"ok"}`, 503 if the DB is down) |
 | `POST` | `/register/` | No     | Create a user (JSON)                 |
 | `POST` | `/token`     | No     | OAuth2 password grant (form-encoded) |
 | `GET`  | `/users/me`  | Bearer | Current user                         |

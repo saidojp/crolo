@@ -89,6 +89,16 @@ def jlpt_deck(client, alice):
     return response.json()
 
 
+class TestHealth:
+    def test_health_is_public(self, client):
+        response = client.get("/health")
+        assert response.status_code == 200
+        assert response.json() == {"status": "ok"}
+
+    def test_healthz_alias(self, client):
+        assert client.get("/healthz").status_code == 200
+
+
 class TestImport:
     def test_import_requires_auth(self, client):
         with RUSSIAN_APKG.open("rb") as handle:

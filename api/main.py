@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status  # pyright: ignore[reportMissingImports]
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from datetime import timedelta
 from typing import cast
 from sqlalchemy.orm import Session
@@ -21,6 +23,24 @@ app.include_router(sessions.deck_router)
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Crolo"}
+
+
+@app.get("/health", tags=["health"])
+@app.get("/healthz", tags=["health"], include_in_schema=False)
+def health_check(db: Session = Depends(get_db)):
+    """Liveness probe used by dev servers, tunnels and uptime monitors.
+
+    Returns 200 only when the process is up *and* SQLite answers, so a proxy
+    can tell "starting" apart from "running".
+    """
+    try:
+        db.execute(text("SELECT 1"))
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is unavailable",
+        )
+    return {"status": "ok"}
 
 
 @app.post("/register/", response_model=User)
