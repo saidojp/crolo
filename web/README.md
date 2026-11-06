@@ -54,6 +54,27 @@ npm run dev
 | `npm run build`     | Type-check, then bundle into `dist/`           |
 | `npm run preview`   | Serve the production build on port `4173`      |
 | `npm run typecheck` | TypeScript only (`tsc --noEmit`)               |
+| `npm run test:e2e`  | Playwright smoke tests (starts both servers)   |
+
+## End-to-end tests
+
+```bash
+npx playwright install chromium   # once
+npm run test:e2e
+```
+
+`playwright.config.ts` starts the API and Vite automatically and reuses servers that
+are already running. The tests cover import → review → edit → publish → both quiz
+modes → results, plus adding a question by hand.
+
+## Screens
+
+| Route                              | Purpose                                             |
+| ---------------------------------- | --------------------------------------------------- |
+| `/decks`                           | Import an `.apkg`, see import report and deck list  |
+| `/decks/:id`                       | Preview / edit generated questions, publish         |
+| `/decks/:id/quiz`                  | Session setup and quiz runner                       |
+| `/sessions/:id/results`            | Results, mistakes list, retry mistakes              |
 
 ## Production
 

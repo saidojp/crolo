@@ -37,6 +37,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 def convert_db_user_to_user(db_user: DBUser) -> User:
     """Convert database user to Pydantic user model."""
     return User(
+        id=cast(Optional[int], db_user.id),
         username=cast(str, db_user.username),
         email=cast(Optional[str], db_user.email),
         full_name=cast(Optional[str], db_user.full_name),

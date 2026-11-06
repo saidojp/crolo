@@ -1,0 +1,10 @@
+.DS_Store
+*.log
+__pycache__/
+*.py[cod]
+api/venv/
+api/.env
+api/crolo.db
+web/test-results/
+web/playwright-report/
+web/blob-report/

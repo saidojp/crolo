@@ -9,8 +9,13 @@ from auth import (
    create_access_token, get_current_active_user, ACCESS_TOKEN_EXPIRE_MINUTES
 )
 from models import User, UserCreate
+from routers import decks, sessions
 
 app = FastAPI(title="Crolo")
+
+app.include_router(decks.router)
+app.include_router(sessions.router)
+app.include_router(sessions.deck_router)
 
 
 @app.get("/")
@@ -29,6 +34,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Email already registered")
     new_user = crud.create_user(db=db, user=user)
     return User(
+        id=cast(int, new_user.id),
         username=cast(str, new_user.username),
         email=cast(str, new_user.email),
         full_name=cast(str, new_user.full_name),

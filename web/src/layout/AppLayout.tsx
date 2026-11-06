@@ -18,6 +18,7 @@ import { useAuth } from "@/auth/AuthProvider"
 
 const navigation = [
   { label: "Overview", to: "/" },
+  { label: "Decks", to: "/decks" },
   { label: "Settings", to: "/settings" },
 ]
 
